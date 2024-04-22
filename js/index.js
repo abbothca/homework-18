@@ -1,5 +1,5 @@
 // import { getUser, getFollowers } from "./api.js";
-import { api } from "./api.js";
+import { getUser, getFollowers, getRepos } from "./api.js";
 import { formatDate } from "./date.js";
 import { showAlert, hideAlert } from "./alert.js";
 import { debounce } from "./utils.js";
@@ -8,68 +8,83 @@ import { debounce } from "./utils.js";
 const inputSearch = document.querySelector(".searchUser");
 const profile = document.querySelector(".profile");
 
-const showProfile = (
-  {
-    avatar_url,
-    html_url,
-    public_repos,
-    public_gists,
-    followers,
-    following,
-    company,
-    blog,
-    location,
-    created_at,
-  },
-  followersList
-) => {
+const createLayout = ({
+  avatar_url,
+  html_url,
+  public_repos,
+  public_gists,
+  followers,
+  following,
+  company,
+  blog,
+  location,
+  created_at,
+}) => {
   profile.innerHTML = `
-        <div class="card card-body mb-3">
-            <div class="row">
-                <div class="col-md-3">
-                    <img class="img-fluid mb-2" src="${avatar_url}">
-                    <a href="${html_url}" target="_blank" class="btn btn-primary btn-block mb-4">View Profile</a>
-                </div>
+    <div class="card card-body mb-3">
+        <div class="row">
+            <div class="col-md-3">
+                <img class="img-fluid mb-2" src="${avatar_url}">
+                <a href="${html_url}" target="_blank" class="btn btn-primary btn-block mb-4">View Profile</a>
+            </div>
 
-                <div class="col-md-9">
-                    <span class="badge badge-primary">Public Repos: ${public_repos}</span>
-                    <span class="badge badge-secondary">Public Gists: ${public_gists}</span>
-                    <span class="badge badge-success">Followers: ${followers}</span>
-                    <span class="badge badge-info">Following: ${following}</span>
-                    <br><br>
+            <div class="col-md-9">
+                <span class="badge badge-primary">Public Repos: ${public_repos}</span>
+                <span class="badge badge-secondary">Public Gists: ${public_gists}</span>
+                <span class="badge badge-success">Followers: ${followers}</span>
+                <span class="badge badge-info">Following: ${following}</span>
+                <br><br>
 
-                    <ul class="list-group">
-                        <li class="list-group-item">Company: ${
-                          company || "No company"
-                        }</li>
-                        <li class="list-group-item">Website/Blog: ${blog}</li>
-                        <li class="list-group-item">Location: ${location}</li>
-                        <li class="list-group-item">Member Since: ${formatDate(
-                          created_at
-                        )}</li>
-                    </ul>
-                </div>
+                <ul class="list-group">
+                    <li class="list-group-item">Company: ${company || "No company"
+    }</li>
+                    <li class="list-group-item">Website/Blog: ${blog}</li>
+                    <li class="list-group-item">Location: ${location}</li>
+                    <li class="list-group-item">Member Since: ${formatDate(
+      created_at
+    )}</li>
+                </ul>
             </div>
         </div>
+    </div>
 
-        <h3 class="page-heading mb-3">Followers</h3>
-        <div class="followers"></div>
+    <h3 class="page-heading mb-3">Followers</h3>
+    <div class="followers"></div>
 
-        <h3 class="page-heading mb-3">Latest Repos</h3>
-        <div class="repos"></div>
-    `;
+    <h3 class="page-heading mb-3">Latest Repos</h3>
+    <div class="repos"></div>
+`;
+}
 
-  const followersElement = document.querySelector(".followers");
+const showList = (selector, arr, fn) => {
+  const parent = document.querySelector(`${selector}`);
   const list = document.createElement("ul");
+  list.classList.add("list-group");
 
-  followersList.forEach((follower) => {
+  arr.forEach((item) => {
     const li = document.createElement("li");
-    li.textContent = follower.login;
+    li.classList.add("list-group-item");
+    li.innerHTML = fn(item);
 
     list.append(li);
   });
 
-  followersElement.append(list);
+  parent.append(list);
+}
+
+const showFollower = (follower) => {
+  return `${follower.login}`
+}
+
+const showRepo = (repo) => {
+  return `<h5><a href="${repo.clone_url}" target="_blank">${repo.name}</a></h5>
+  <p>${repo.description}</p> `;
+}
+
+const showProfile = (user, followersList, reposList) => {
+  createLayout(user);
+  showList(".followers", followersList, showFollower);
+  showList(".repos", reposList, showRepo);
 };
 
 const clearProfile = () => {
@@ -88,13 +103,10 @@ const handleInput = async ({ target: { value } }) => {
       return;
     }
 
-    const user = await api.getUser(inputValue);
-    const followers = await api.getFollowers(inputValue, 6);
+    const user = await getUser(inputValue);
+    const [followers, repos] = await Promise.all([getFollowers(inputValue, 6), getRepos(inputValue, 5)]);
 
-    // Promise.all
-    // const [user, followers] = await Promise.all([getUser(inputValue), getFollowers(inputValue, 6)])
-
-    showProfile(user, followers);
+    showProfile(user, followers, repos);
   } catch (error) {
     showAlert(error.message, "danger", 2000);
   }

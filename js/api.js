@@ -1,12 +1,15 @@
-const API_TOKEN = "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";
+const API_TOKEN = "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";
 const API_URL = "https://api.github.com";
+const DEFAULT_OPTIONS = {
+  headers: {
+    Authorization: `Bearer ${API_TOKEN}`,
+    "X-GitHub-Api-Version": "2022-11-28"
+  }
+};
 
 export const getUser = async (userName) => {
-  const response = await fetch(`${API_URL}/users/${userName}`, {
-    headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
-    },
-  });
+  const url = new URL(`/users/${userName}`, API_URL)
+  const response = await fetch(url, DEFAULT_OPTIONS);
   const data = await response.json();
 
   // Error handling
@@ -18,14 +21,10 @@ export const getUser = async (userName) => {
 };
 
 export const getFollowers = async (userName, amount = 10) => {
-  const response = await fetch(
-    `${API_URL}/users/${userName}/followers?per_page=${amount}`,
-    {
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-      },
-    }
-  );
+  const url = new URL(`/users/${userName}/followers`, API_URL);
+  const searchParams = new URLSearchParams({per_page: amount});
+  url.search =searchParams;
+  const response = await fetch(url, DEFAULT_OPTIONS);
   const data = await response.json();
 
   // Error handling
@@ -36,44 +35,17 @@ export const getFollowers = async (userName, amount = 10) => {
   return data;
 };
 
-class API {
-  API_URL = "https://api.github.com";
-  #API_TOKEN = "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";
+export const getRepos = async (userName, amount = 10) => {
+  const url = new URL(`/users/${userName}/repos`, API_URL);
+  const searchParams = new URLSearchParams({page:1, per_page: amount, direction: "desc", sort: "updated"});
+  url.search = searchParams;
+  const response = await fetch(url, DEFAULT_OPTIONS);
+  const data = await response.json();
 
-  async getUser(userName) {
-    const response = await fetch(`${this.API_URL}/users/${userName}`, {
-      headers: {
-        Authorization: `Bearer ${this.#API_TOKEN}`,
-      },
-    });
-    const data = await response.json();
-
-    // Error handling
-    if (!response.ok) {
-      throw new Error(data.message);
-    }
-
-    return data;
+  // Error handling
+  if (!response.ok) {
+    throw new Error(data.message);
   }
 
-  async getFollowers(userName, amount = 10) {
-    const response = await fetch(
-      `${this.API_URL}/users/${userName}/followers?per_page=${amount}`,
-      {
-        headers: {
-          Authorization: `Bearer ${this.#API_TOKEN}`,
-        },
-      }
-    );
-    const data = await response.json();
-
-    // Error handling
-    if (!response.ok) {
-      throw new Error(data.message);
-    }
-
-    return data;
-  }
-}
-
-export const api = new API();
+  return data;
+};
