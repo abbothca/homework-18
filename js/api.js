@@ -1,8 +1,8 @@
-const API_TOKEN = "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";
+const GITHUB_API_TOKEN = "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";
 const API_URL = "https://api.github.com";
 const DEFAULT_OPTIONS = {
   headers: {
-    Authorization: `Bearer ${API_TOKEN}`,
+    Authorization: `Bearer ${GITHUB_API_TOKEN}`,
     "X-GitHub-Api-Version": "2022-11-28"
   }
 };
